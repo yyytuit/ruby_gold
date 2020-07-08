@@ -23,16 +23,33 @@ p (1..10).lazy.map{|num| # lazyは遅延評価で#<Enumerator::Lazy: #<Enumerato
 #injectで0を指定して、0+2それを記憶しながらどんどんたすので、2+4、最後に6+6となり答えは12
 
 '3問目 X 正解は2,3'
+
+module M
+  CONST = "Hello, world"
+
+  class C
+    def awesome_method
+      CONST
+    end
+  end
+end
+
+p M::C.new.awesome_method
+# => "Hello, world"
+
+
 '選択肢1は不正解'
 
 module M
   CONST = "Hello, world"
+  # p Module.nesting [M]
 end
 
 class M::C
   def awesome_method
     CONST
   end
+  # p Module.nesting [M::C]
 end
 
 p M::C.new.awesome_method
@@ -54,7 +71,11 @@ module M
 end
 
 p C.new.awesome_method
-# class_evalをにブロックを渡すことで、Cクラスにawesome_methodメソッドを定義したかのように見せることができる。なのでmodule M内でCクラスにawesome_methodを定義し、 modudleMで定義したCONSTを呼び出している。
+# class_evalをにブロックを渡すことで、Cクラスにawesome_methodメソッドを定義したかのように見せることができる。
+# なのでmodule M内でCクラスにawesome_methodを定義し、 modudleMで定義したCONSTを呼び出している。
+C.method_defined?(:awesome_method)
+# => true
+
 
 '選択肢3は正解'
 
@@ -74,6 +95,8 @@ p C.new.awesome_method
 
 # class_evalに文字列を渡した場合のネストの状態はクラスCです。
 # CONSTはクラスCにありますので"Hello, world"が表示されます。
+C.method_defined?(:awesome_method)
+# => true
 
 '選択肢4は不正解'
 
@@ -145,10 +168,10 @@ module M1
   end
 
   class C2 < C1
-    CONST = "010"
+    # CONST = "010"
 
     module M2
-      CONST = "011"
+      # CONST = "011"
 
       class Ca
         CONST = "100"
@@ -161,8 +184,93 @@ module M1
   end
 end
 
+# 解説
+
+# Rubyは定数の参照はレキシカルに決定されます。名前空間ではなく、プログラム上の定義された場所と使われている場所の静的な位置づけが重要です。
+# 例えば、次のプログラムでは期待した結果が得られません。CONSTがモジュールMのスコープにあるためです。
+
+module M
+  CONST = "Hello, world"
+end
+
+class M::C
+  def awesome_method
+    CONST
+  end
+end
+
+p M::C.new.awesome_method # 例外が発生する
+
+# 一方で同じレキシカルスコープにある場合は例外は発生しません
+module M
+  CONST = "Hello, world"
+
+  class C
+    def awesome_method
+      CONST
+    end
+  end
+end
+
+p M::C.new.awesome_method
 #また、使われている定数の場所がネストされている場合は内側から順に定数の探索が始まります。
+#なのでレキシカルスコープの探索から恥じまる。
+#例
+
+#以下はレキシカルスコープ内M1::C2::M2::Cbの中にM1::C2のCONST = "010"を発見し出力する
+module M1
+  class C1
+    CONST = "001"
+  end
+
+  class C2 < C1
+    CONST = "010"
+
+    module M2
+      # CONST = "011"
+
+      class Ca
+        CONST = "100"
+      end
+
+      class Cb < Ca
+        p CONST
+      end
+    end
+  end
+end
+
+>"010"
+
 #レキシカルスコープに定数がない場合は、スーパークラスの探索を行います。
+
+# 例
+# 以下はレキシカルスコープ内M1::C2::M2::Cbの中にCONSTが定義されていないので、スーパークラスをたどる
+# なので出力はCONST = "100"
+module M1
+  class C1
+    CONST = "001"
+  end
+
+  class C2 < C1
+    # CONST = "010"
+
+    module M2
+      # CONST = "011"
+
+      class Ca
+        CONST = "100"
+      end
+
+      class Cb < Ca
+        p CONST
+      end
+    end
+  end
+end
+
+>"100"
+
 #クラスCbから最も物理的に近いのはM2::CONSTであるため答えは"011"になります。
 #スーパークラスの探索はこの場合には行われません。
 
@@ -314,6 +422,14 @@ end
 p $c.say
 #"Hello, world"
 
+# 解説
+# レキシカルスコープには定数はありません。その場合はスーパークラスを探索します。
+# 特異クラスの継承関係にクラスCがありますので定数を見つけることができます。
+
+# 参考：特異クラスの継承関係
+
+# [#<Class:#<C:0x007fa4741607e0>>, C, Object, Kernel, BasicObject]
+
 '15問目 X'
 
 class String
@@ -325,6 +441,16 @@ p "12345".hoge
 # 実行結果
 #54321
 #alias_method :reverse, :hoge
+
+# 解説
+# alias_methodは既に存在するメソッドの別名を付けます。
+# 宣言はalias 新メソッド名 旧メソッド名形式で行います。
+
+# よく似たメソッドにaliasがあります。異なる点は下記です。
+
+# aliasのメソッド名は識別子かSymbolを受け取ります。
+# alias_methodのメソッド名はStringかSymbolを受け取ります。
+
 
 '16問目 X'
 
@@ -348,6 +474,15 @@ B = 15
 A.f
 
 # 42
+
+# 解説
+# module_evalに文字列を引数とした場合は、レシーバーのスコープで評価されます。
+# 問題のプログラムを次のようにするとネストの状態を調べることができます。
+
+A.module_eval(<<-CODE)
+  p Module.nesting # [A]と表示され、モジュールAのスコープにあることがわかる
+CODE
+# 定数は静的に探索が行われますので、A::Bの42が答えになります。
 
 
 '17問目 X 不明'
@@ -384,11 +519,9 @@ end
 p C.new.greet
 # ::Cはトップレベルを指すからclass C < Base endを参照する。
 # なので親クラスのBaseを参照するから "Hello, world"が正解
-# ただ、なんでトップレベルがclass C < Base end部分なのかと
-# module pのCONSTが呼ばれないのか今一不明
 
 
-'18問目 X'
+'18問目 X 1'
 
 m = Module.new
 
@@ -409,6 +542,35 @@ EOS
 m.module_eval(&_proc)
 
 p m.const
+
+# 例外が発生する
+
+# "Constant in Module instance"と表示される
+
+# "Constant in Proc"と表示される
+
+# "Constant in Module instance"と表示される
+
+# 解説
+# メソッドconstは特異クラスで定義されていないので、例外が発生します。
+# constメソッドを実行したい場合は次のようにmodule_functionまたはinstance_evalを使う必要があります。
+
+m.module_eval(<<-EOS) # module_eval のまま
+  CONST = "Constant in Module instance"
+
+  def const
+    CONST
+  end
+
+  module_function :const # module_function にシンボルでメソッドを指定する
+EOS
+m.instance_eval(<<-EOS) # instance_eval で特異クラスにメソッドを定義する
+  CONST = "Constant in Module instance"
+
+  def const
+    CONST
+  end
+EOS
 
 '19問目 OK'
 
@@ -432,9 +594,9 @@ A.f
 
 #'module_evalにブロックを渡した場合のネストは次の通りです。'
 
-#A.module_eval do
-#  p Module.nesting # []と表示され、ネストされた状態になく、トップレベルにいることがわかる
-#end
+A.module_eval do
+ p Module.nesting # []と表示され、ネストされた状態になく、トップレベルにいることがわかる
+end
 #トップレベルで定数を定義した場合はObjectの定数になります。
 
 #B = "Hello, world"
@@ -494,16 +656,16 @@ p enum.next
 '次のプログラムを実行するとどうなりますか'
 
 class C
-  p @@val = 10
+  @@val = 10
 end
 
 module B
-  p @@val = 30
+  @@val = 30
 end
 
 module M
   include B
-  p @@val = 20
+  @@val = 20
 
   class << C
     p @@val
@@ -532,6 +694,44 @@ end
 p C.class_variable_get(:@@val) # 10が表示される
 'この問題ではクラスCの特異クラス定義をモジュールMで行っています。
 クラス変数はレキシカルに決定されますので答えは20です。'
+
+# ということはクラス変数じゃなかったら?
+
+class C
+  @val = 10
+end
+
+module B
+  @val = 30
+end
+
+module M
+  include B
+  @val = 20
+
+  class << C
+    p @val
+  end
+end
+# nil
+
+class C
+  Val = 10
+end
+
+module B
+  Val = 30
+end
+
+module M
+  include B
+  Val = 20
+
+  class << C
+    p Val
+  end
+end
+# 20
 
 '23 問目 OK 答え1'
 
@@ -894,6 +1094,11 @@ p C.ancestors
 
 # [M2, M1, C, Object, Kernel, BasicObject]と表示される
 
+# ちなみに
+prepend M1
+prepend M2
+# とすると
+# [M2, M1, C, Object, Kernel, BasicObject]
 
 '33問目 x 3'
 
@@ -1004,3 +1209,735 @@ mapper = array.map!{|content| content.succ}
 p array.__id__ #=> 70361769061320
 p mapper.__id__ #=> 70361769061320
 'freezeはオブジェクトの破壊的な変更を禁止していますので、map!を実行すると例外が発生します'
+
+
+'36問目 ok 1'
+
+while not DATA.eof?
+  print DATA.read 1
+end
+
+__END__
+1
+2
+3
+4
+
+
+# 1
+# 2
+# 3
+# 4
+# と表示される
+
+# エラーが発生する
+
+# 何も表示されない
+
+# 4
+# 3
+# 2
+# 1
+# と表示される
+
+'37問目 ok 3'
+
+val = 0
+
+class B
+end
+
+class C < B
+end
+
+if C < BasicObject
+  val += 100
+else
+  val += 15
+end
+
+if B < C
+  val += 100
+else
+  val += 15
+end
+
+p val
+
+# 100と表示される
+
+# 200と表示される
+
+# 115と表示される
+
+# 130と表示される
+
+'38問目 x 3'
+
+begin
+  raise "Err!"
+rescue => e
+  puts e.class
+end
+
+# エラーが発生する
+
+# StandardErrorと表示される
+
+# RuntimeErrorと表示される
+
+# Exceptionと表示される
+
+# 解説
+
+'raiseの例外クラスを省略した場合は、RuntimeErrorを発生させます。
+rescueの例外クラスを省略した場合は、StandardErrorを捕捉します。
+RuntimeErrorはstanderdErrorのサブクラスです。'
+
+
+
+'39問目 x 3'
+
+module K
+  CONST = "Good, night"
+  class P
+  end
+end
+
+module K::P::M
+  class C
+    CONST = "Good, evening"
+  end
+end
+
+module M
+  class C
+    CONST = "Hello, world"
+  end
+end
+
+class K::P
+  class M::C
+    p CONST
+  end
+end
+
+
+# 例外が発生する
+
+# "Good, night"と表示される
+
+# "Good, evening"と表示される
+
+# "Hello, world"と表示される
+
+# 解説
+
+'クラスK::PにあるクラスM::Cはトップレベルにあるものとは異なります。
+ネスト状態が同じものがあれば、そのレキシカルスコープから定数の探索を行います。
+この問題では定数CONSTが参照しているのはK::P::M::Cで、そのレキシカルスコープにある定数を探索しますので"Good, evening"と表示されます。
+'
+
+module K
+  class P
+    p Module.nesting # [K::P, K]と表示されます
+  end
+end
+
+module K::P::M
+  class C
+    p Module.nesting # [K::P::M::C, K::P::M]と表示されます
+  end
+end
+
+module M
+  class C
+    p Module.nesting # [M::C, M]と表示されます
+  end
+end
+
+class K::P
+  class M::C
+    p Module.nesting # [K::P::M::C, K::P]と表示されます
+  end
+end
+
+
+'40問目 x 4'
+
+'singleton_classは特異クラスを取得するメソッドです。
+特異クラスは#<Class:クラス名>のように表示されます。'
+
+class C
+end
+
+p C.singleton_class # #<Class:C>と表示される
+
+
+'次のプログラムを実行するとどうなりますか'
+
+class C
+end
+
+p C.singleton_class.singleton_class.singleton_class.singleton_class
+
+# <Class:C>と表示される
+
+# <Class:#<Class:C>>と表示される
+
+# <Class:#<Class:#<Class:C>>>と表示される
+
+# <Class:#<Class:#<Class:#<Class:C>>>>と表示される
+
+
+'singleton_classはKernelモジュールにあるインスタンスメソッドです。'
+
+m = C.method :singleton_class
+p m.owner # Kernel
+'owner このメソッドが定義されている class か module を返します。'
+'特異クラスの継承関係にKernelモジュールがあるため、singleton_classを呼び出すことが出来るため、特異クラスの特異クラスを取得するようなことができます。'
+
+class C
+end
+
+p C.singleton_class # #<Class:C>
+p C.singleton_class.singleton_class # #<Class:#<Class:C>>
+p C.singleton_class.singleton_class.singleton_class # #<Class:#<Class:#<Class:C>>>
+p C.singleton_class.singleton_class.singleton_class.singleton_class # #<Class:#<Class:#<Class:#<Class:C>>>>
+# この問題ではsingleton_classを4回呼び出していますので#<Class:#<Class:#<Class:#<Class:C>>>>が答えになります。
+
+
+'41問目 ok 2'
+
+class C
+  CONST = "Good, night"
+end
+
+module M
+  CONST = "Good, evening"
+end
+
+module M
+  class C
+    CONST = "Hello, world"
+  end
+end
+
+module M
+  class ::C
+    p CONST
+  end
+end
+
+# 例外が発生する
+
+# "Good, night"と表示される
+
+# "Good, evening"と表示される
+
+# "Hello, world"と表示される
+
+'この問題ではクラスCにある定数CONSTを参照していますが、トップレベルにあるものと同じです。
+
+クラス名が修飾されている場合は同じ名前であっても別のクラスになりますが、
+::演算子を使うことによりネストを指定することができます。
+
+モジュールMにあるクラスCでメソッドの呼び出しを行うにはM::Cと書きます。
+また、先頭に::をつけるとトップレベルから探索を行います。
+
+次のプログラムでは先頭に::がある場合はモジュール内にあってもトップレベルのクラスCと同じです。
+M::Cの場合はトップレベルのクラスCとは別のものです。'
+
+class C
+  p Module.nesting # [C]と表示されます
+end
+
+module M
+  class ::C
+    p Module.nesting # [C, M]と表示されます
+  end
+end
+
+module M
+  class C
+    p Module.nesting # [M::C, M]と表示されます
+  end
+end
+'この問題では先頭に::がついていますのでトップレベルにあるクラスCと同じです。
+よって、"Good, night"と表示されます。'
+
+'42問目 ok 4'
+
+val = 100
+
+def method(val)
+  yield(15 + val)
+end
+
+_proc = Proc.new{|arg| val + arg }
+
+p method(val, &_proc)
+
+
+# 130と表示される
+
+# 200と表示される
+
+# 115と表示される
+
+# 215と表示される
+
+
+'43問目 ok 1'
+
+fiber = Fiber.new do
+  __(1)__ 'Hi, there!'
+end
+
+p __(2)__
+期待値
+
+"Hi, there!"
+
+# __(1)__ ruby Fiber.yield
+# __(2)__ ruby fiber.resume
+
+# __(1)__ ruby Fiber.resume
+# __(2)__ ruby fiber.yield
+
+# __(1)__ ruby fiber.resume
+# __(2)__ ruby Fiber.yield
+
+# __(1)__ ruby fiber.yield
+# __(2)__ ruby Fiber.resume
+
+# 解説
+
+'Fiberは軽量スレッドを提供します。
+
+Fiber#resumeを実行するとFiber.yieldが最後に実行された行から再開するか、Fiber.newに指定したブロックの最初の評価を行います。
+
+サンプルプログラムを実行して、処理の内容を見てみましょう。'
+
+f = Fiber.new do |name|
+  Fiber.yield "Hi, #{name}"
+end
+
+p f.resume('Matz') # 'Hi, Matz'と表示されます。
+f.resume('Matz')を実行する。
+'Fiber.newのブロックを評価し、引数nameには'Matz'をセットする。
+変数を展開して、'Hi, Matz'をFiber.yieldの引数にセットする。
+Fiber.yield('Hi, Matz')を実行すると、f.resume('Matz')の戻り値が'Hi, Matz'になる。
+Fiber.yield('Hi, Matz')の実行終了を待たずに、プログラムが終了する。
+問題のプログラムの期待値を得る組み合わせは次のとおりです。'
+
+fiber = Fiber.new do
+  Fiber.yield 'Hi, there!'
+end
+
+p fiber.resume
+'Hi, there!'
+
+
+'44問目 x 2,3,4'
+
+# 次のプログラムと同じ結果になる選択肢を選んでください。
+module M
+  def self.a
+    100
+  end
+end
+p M.a
+
+# 選択肢
+module M
+  include self
+  def a
+    100
+  end
+end
+p M.a
+
+# 選択肢
+module M
+  extend self
+  def a
+    100
+  end
+end
+p M.a
+
+# 選択肢
+module M
+  def a
+    100
+  end
+  module_function :a
+end
+p M.a
+
+# 選択肢
+module M
+  class << self
+    def a
+      100
+    end
+  end
+end
+p M.a
+
+
+'45問目 x 3'
+array = ["a", "b", "c"].freeze
+
+array.each do |chr|
+  chr.upcase!
+end
+
+p array
+
+# 例外が発生する
+
+# ["a", "b", "c"]と表示される
+
+# ["A", "B", "C"]と表示される
+
+# ["d", "e", "f"]と表示される
+
+# 解説
+
+'freezeはオブジェクトの破壊的な変更を禁止します。
+次のプログラムでは配列の破壊的な変更を禁止しますので、例外が発生します。'
+
+array = ["a", "b", "c"].freeze
+array << "d" # 例外発生
+
+p array
+'配列の破壊的な変更を禁止しますが、配列の要素の破壊的な変更は禁止していません。
+したがって、upcase!を実行しても例外は発生しません。
+
+["A", "B", "C"]がこの問題の答えです。'
+
+'46問目'
+
+class Human
+  attr_reader :name
+
+  alias original_name name
+
+  def name
+    "Mr. " + original_name
+  end
+
+  def initialize(name)
+    @name = name
+  end
+end
+human = Human.new("Andrew")
+puts human.name
+
+# 選択肢
+class Human
+  attr_reader :name
+
+  alias_method :original_name, :name
+
+  def name
+    "Mr. " + original_name
+  end
+
+  def initialize(name)
+    @name = name
+  end
+end
+human = Human.new("Andrew")
+puts human.name
+
+# 選択肢
+class Human
+  attr_reader :name
+
+  def name
+    "Mr. " + super
+  end
+
+  def initialize(name)
+    @name = name
+  end
+end
+human = Human.new("Andrew")
+puts human.name
+
+
+# 選択肢
+class Human
+  attr_reader :name
+
+  def name
+    "Mr. " + @name
+  end
+
+  def initialize(name)
+    @name = name
+  end
+end
+human = Human.new("Andrew")
+puts human.name
+
+# 選択肢
+class Human
+  attr_reader :name
+
+  def name
+    "Mr. " + name
+  end
+
+  def initialize(name)
+    @name = name
+  end
+end
+
+human = Human.new("Andrew")
+puts human.name
+
+
+# 解説
+
+'この問題ではアクセサをattr_readerで作成していますが、aliasでoriginal_nameとして別名をつけています。
+
+新しく定義したnameメソッドを実行すると、Mr. Andrewと表示されます。
+
+aliasと同じくメソッドの別名をつけます。オーバーライドして元のアクセサを呼び出すことができますので、問題と同じ結果になります。'
+
+class Human
+  attr_reader :name
+
+  alias_method :original_name, :name
+
+  def name
+    "Mr. " + original_name
+  end
+
+  def initialize(name)
+    @name = name
+  end
+end
+human = Human.new("Andrew")
+puts human.name
+
+# nameメソッドの中でsuperで親クラスの同名のメソッドを呼び出そうとしていますが、親クラスのObjectにはそのようなメソッドはありませんので同じ結果になりません。
+class Human
+  attr_reader :name
+
+  def name
+    "Mr. " + super
+  end
+
+  def initialize(name)
+    @name = name
+  end
+end
+human = Human.new("Andrew")
+puts human.name
+
+# イニシャライザで初期化したインスタンス変数をnameメソッドで参照していますので、問題と同じ結果になります。
+class Human
+  attr_reader :name
+
+  def name
+    "Mr. " + @name
+  end
+
+  def initialize(name)
+    @name = name
+  end
+end
+human = Human.new("Andrew")
+puts human.name
+
+# nameメソッドの中で同名のメソッドを呼び出していますので、再帰呼出しになっています。終了せず、例外が発生しますので問題と同じ結果にはなりません。
+class Human
+  attr_reader :name
+
+  def name
+    "Mr. " + name
+  end
+
+  def initialize(name)
+    @name = name
+  end
+end
+
+human = Human.new("Andrew")
+puts human.name
+
+'47問目 x 124'
+
+# 問題
+# Kernelモジュールで定義されているメソッドを選んでください。
+
+# Kernel#String
+
+# Kernel#Array
+
+# Kernel#Date
+
+# Kernel#Hash
+
+'Kernel#Array、Kernel#Hash、Kernel#StringはKernelのモジュール関数として定義されています。
+Kernel#Dateはありません。
+
+これらのメソッドは次のように使います。
+
+p Array("Awesome Array") #=> ["Awesome Array"]
+p Hash(awesome_key: :value) #=> {:awesome_key=>:value}
+p String('0123456789') #=> "0123456789"'
+
+
+'48問目 x 4'
+
+p Class.method_defined? :new
+p String.method_defined? :new
+p Class.singleton_class.method_defined? :new
+p String.singleton_class.method_defined? :new
+
+'Stringクラスはクラスメソッドnewでインスタンスを生成します。
+StringクラスはClassクラスのインスタンスですので、StringクラスにあるnewはClassクラスのインスタンスメソッドです。
+また、ClassクラスはRubyで多種多様なクラスを生成しますので、Classにもクラスメソッドとしてnewがあります。'
+
+str = String.new("Awesome String") # new は Class のインスタンスメソッド
+# str.new こういった呼び方は出来ない
+Klass = Class.new # new は Class のクラスメソッド
+
+# 選択肢
+# true
+# true
+# true
+# false
+# 選択肢
+# false
+# false
+# true
+# true
+# 選択肢
+# true
+# false
+# false
+# true
+# 選択肢
+# true
+# false
+# true
+# true
+
+'49問目 ok '
+
+require 'yaml'
+
+yaml = <<YAML
+  sum: 510,
+  orders:
+    - 260
+    - 250
+YAML
+
+object = YAML.__(1)__
+
+p object
+
+# 期待値（Hashオブジェクト）
+
+{"sum"=>510, "orders"=>[260, 250]}
+
+#答え
+load yaml
+
+
+'50問目'
+
+CONST_LIST_A = ['001', '002', '003']
+begin
+  CONST_LIST_A.map{|id| id << 'hoge'}
+rescue
+end
+
+CONST_LIST_B = ['001', '002', '003'].freeze
+begin
+  CONST_LIST_B.map{|id| id << 'hoge'}
+rescue
+end
+
+CONST_LIST_C = ['001', '002', '003'].freeze
+begin
+  CONST_LIST_C.map!{|id| id << 'hoge'}
+rescue
+end
+
+CONST_LIST_D = ['001', '002', '003'].freeze
+begin
+  CONST_LIST_D.push('add')
+rescue
+end
+
+p CONST_LIST_A
+p CONST_LIST_B
+p CONST_LIST_C
+p CONST_LIST_D
+
+'変数は1文字目を大文字にすると定数になります。定数には次の特徴があります。
+
+代入を行うと警告が発生しますが、値は変更されます。
+中身を直接変更した場合は値が変わります。ただし、警告は発生しません。
+特徴1の例'
+
+CONST = ["001", "002", "003"]
+CONST = ["A", "B", "C"]
+p CONST
+
+# <実行結果>
+# warning: already initialized constant CONST
+# ["A", "B", "C"]
+# 特徴2の例
+
+CONST = ["001", "002", "003"]
+CONST[0] = "A"
+p CONST
+
+# <実行結果>
+# ["A", "002", "003"]
+'freezeはオブジェクトを凍結します。凍結されたオブジェクトは次の特徴があります。
+
+破壊的な操作ができません。
+オブジェクトの代入ができます。
+自作クラスのインスタンス変数をfreezeしない限り、変更できます。
+特徴1の実行結果'
+
+hoge = "hoge".freeze
+hoge.upcase!
+p hoge
+
+# <実行結果>
+# RuntimeError: can't modify frozen String
+# 特徴2の実行結果
+
+hoge = "hoge".freeze
+hoge = "foo".freeze
+p hoge
+
+# <実行結果>
+# foo
+# 特徴3の実行結果
+
+class Fish
+  attr_accessor :name
+  def initialize(name)
+    @name = name
+  end
+end
+
+liberty = Fish.new("liberty")
+liberty.name.upcase!
+p liberty
+
+# <実行結果>
+# LIBERTY

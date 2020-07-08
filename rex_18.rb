@@ -28,3 +28,7 @@ p m.module_eval(&_proc) #こちらの記述はただの引っ掛け
 
 p m.const
 
+# rex_18.rb:6: warning: already initialized constant CONST
+# rex_18.rb:3: warning: previous definition of CONST was here
+"Constant in Proc"
+"Constant in Module instance"
