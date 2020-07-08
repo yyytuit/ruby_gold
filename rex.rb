@@ -1941,3 +1941,5 @@ p liberty
 
 # <実行結果>
 # LIBERTY
+
+a
