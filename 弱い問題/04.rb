@@ -37,3 +37,23 @@ end
 B = "Hello, world"
 p Object.const_get(:B) # "Hello, world"と表示される
 # 問題にあるメソッドA.fはトップレベルにある定数を探索するため答えは15になります。
+
+# 以下は42が表示される
+
+module A
+  B = 42
+
+  def f
+    21
+  end
+end
+
+A.module_eval(<<-CODE)
+  def self.f
+    p B
+  end
+CODE
+
+B = 15
+
+A.f

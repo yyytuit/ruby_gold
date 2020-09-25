@@ -1,3 +1,4 @@
+# 問題 x 2
 class C
   def self.m1
     200
@@ -16,15 +17,20 @@ using R
 
 puts C.m1
 
+
+# 選択肢
 # 100と表示される
 
+# 選択肢
 # 200と表示される
 
+# 選択肢
 # 300と表示される
 
+# 選択肢
 # エラーが発生する
 
-# 解説
+
 # Module#refineは無名のモジュールを作成します。ブロック内のselfは無名モジュールになります。
 
 class C
@@ -53,48 +59,37 @@ end
 
 using M
 
-puts C.m1
-# C.m1 in M と表示されます。
+puts C.m1 # C.m1 in M と表示されます。
 # この問題では、クラスメソッドは再定義していませんので200が表示されます。
 
+# 問題 x 3
+# 実行結果にある結果を得るようにXXXXに適したコードを選べ
 
-# 問題 4
-
-class C
-  def m1
-    400
-  end
+arr = XXXX
+arr.each do |i|
+  p i
 end
-
-module M
-  refine C do
-    def m1
-      100
-    end
-  end
-end
-
-class C
-  using M
-end
-
-puts C.new.m1
+# 実行結果
+apple
+banana
+orange
 
 
 # 選択肢
-# 100と表示される
+# %a/apple banana orange/
 
 # 選択肢
-# 200と表示される
+# %r/apple banana orange/
 
 # 選択肢
-# エラーになる
+# %w/apple banana orange/
 
 # 選択肢
-# 400と表示される
+# %/apple banana orange/
 
-# Refinementは有効化したスコープのみに影響を与えることが出来ます。
-# この問題ではクラスオープンした際にusingでRefinementを有効化していますが、
-# スコープ外は無効になります。
+# %は%記法といいます。
 
-# よって、puts C.new.m1とした結果は400になります。
+# %a/ /: このような記法はありません
+# %/ /: ダブルクォート文字列
+# %r/ /: 正規表現
+# %w/ /: 要素が文字列の配列
