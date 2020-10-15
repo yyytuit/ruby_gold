@@ -16,127 +16,127 @@ p M::C.new.awesome_method
 
 
 # 選択
+# 1
+module M
+  CONST = "Hello, world"
+end
+
+class M::C
+  def awesome_method
+    CONST
+  end
+end
+
+p M::C.new.awesome_method
 # 選択肢
-# module M
-#   CONST = "Hello, world"
-# end
+class C
+end
 
-# class M::C
-#   def awesome_method
-#     CONST
-#   end
-# end
+module M
+  CONST = "Hello, world"
 
-# p M::C.new.awesome_method
-# 選択肢
-# class C
-# end
+  C.class_eval do
+    def awesome_method
+      CONST
+    end
+  end
+end
 
-# module M
-#   CONST = "Hello, world"
-
-#   C.class_eval do
-#     def awesome_method
-#       CONST
-#     end
-#   end
-# end
-
-# p C.new.awesome_method
+p C.new.awesome_method
 # 選択
 # 選択肢
-# class C
-#   CONST = "Hello, world"
-# end
+class C
+  CONST = "Hello, world"
+end
 
-# module M
-#   C.class_eval(<<-CODE)
-#     def awesome_method
-#       CONST
-#     end
-#   CODE
-# end
+module M
+  C.class_eval(<<-CODE)
+    def awesome_method
+      CONST
+    end
+  CODE
+end
 
-# p C.new.awesome_method
+p C.new.awesome_method
 # 選択肢
-# class C
-#   CONST = "Hello, world"
-# end
+class C
+  CONST = "Hello, world"
+end
 
-# module M
-#   C.class_eval do
-#     def awesome_method
-#       CONST
-#     end
-#   end
-# end
+module M
+  C.class_eval do
+    def awesome_method
+      CONST
+    end
+  end
+end
 
-# p C.new.awesome_method
+p C.new.awesome_method
 
 # 解説
-# 定数の参照はレキシカルに行われます。
-# M::C#awesome_methodのコンテキストにCONSTがないため例外が発生します。
+定数の参照はレキシカルに行われます。
+#M::C#awesome_methodのコンテキストにCONSTがないため例外が発生します。
 
-# module M
-#   CONST = "Hello, world"
-# end
+module M
+  CONST = "Hello, world"
+end
 
-# class M::C
-#   def awesome_method
-#     CONST
-#   end
-# end
+class M::C
+  def awesome_method
+    CONST
+  end
+end
 
-# p M::C.new.awesome_method
+p M::C.new.awesome_method
 
-# # class_evalにブロックを渡した場合は、ブロック内のネストはモジュールMになります。
-# # そのコンテキストから定数を探しますので"Hello, world"が表示されます。
+# class_evalにブロックを渡した場合は、ブロック内のネストはモジュールMになります。
+# そのコンテキストから定数を探しますので"Hello, world"が表示されます。
 
-# class C
-# end
+class C
+end
 
-# module M
-#   CONST = "Hello, world"
+module M
+  CONST = "Hello, world"
 
-#   C.class_eval do
-#     def awesome_method
-#       CONST
-#     end
-#   end
-# end
+  C.class_eval do
+    def awesome_method
+      CONST
+    end
+  end
+end
 
-# p C.new.awesome_method
+p C.new.awesome_method
 
-# # class_evalに文字列を渡した場合のネストの状態はクラスCです。
-# # CONSTはクラスCにありますので"Hello, world"が表示されます。
+# class_evalに文字列を渡した場合のネストの状態はクラスCです。
+# CONSTはクラスCにありますので"Hello, world"が表示されます。
 
-# class C
-#   CONST = "Hello, world"
-# end
+class C
+  CONST = "Hello, world"
+end
 
-# module M
-#   C.class_eval(<<-CODE)
-#     def awesome_method
-#       CONST
-#     end
-#   CODE
-# end
+module M
+  C.class_eval(<<-CODE)
+    def awesome_method
+      CONST
+    end
+  CODE
+end
 
-# p C.new.awesome_method
+p C.new.awesome_method
 
-# # class_evalにブロックを渡した場合は、ブロック内のネストはモジュールMになります。
-# # そのコンテキストから定数を探しますがないため例外が発生します。
+# class_evalにブロックを渡した場合は、ブロック内のネストはモジュールMになります。
+# そのコンテキストから定数を探しますがないため例外が発生します。
 
-# class C
-#   CONST = "Hello, world"
-# end
+class C
+  CONST = "Hello, world"
+end
 
-# module M
-#   C.class_eval do
-#     def awesome_method
-#       CONST
-#     end
-#   end
-# end
+module M
+  C.class_eval do
+    def awesome_method
+      CONST
+    end
+  end
+end
 
-# p C.new.awesome_method
+p C.new.awesome_method

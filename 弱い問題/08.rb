@@ -8,17 +8,17 @@ puts "EVAL_CONST is defined? #{mod.const_defined?(:EVAL_CONST)}"
 puts "EVAL_CONST is defined? #{Object.const_defined?(:EVAL_CONST)}"
 
 
-# EVAL_CONST is defined? false
-# EVAL_CONST is defined? true
+EVAL_CONST is defined? false
+EVAL_CONST is defined? true
 
-# EVAL_CONST is defined? true
-# EVAL_CONST is defined? true
+EVAL_CONST is defined? true
+EVAL_CONST is defined? true
 
-# EVAL_CONST is defined? true
-# EVAL_CONST is defined? false
+EVAL_CONST is defined? true
+EVAL_CONST is defined? false
 
-# EVAL_CONST is defined? false
-# EVAL_CONST is defined? false
+EVAL_CONST is defined? false
+EVAL_CONST is defined? false
 
 # 定数のスコープはレキシカルに決定されます。
 # ブロックはネストの状態を変更しないので、module_evalのブロックで定義した定数はこの問題ではトップレベルで定義したことになります。
@@ -36,13 +36,13 @@ end
 puts Object.const_defined? :EVAL_CONST # trueと表示される
 puts mod.const_defined? :EVAL_CONST # trueと表示される
 
-# # 第2引数にfalseを指定すると継承関係まで探索しない
-# puts mod.const_defined? :EVAL_CONST, false # falseと表示される
+# 第2引数にfalseを指定すると継承関係まで探索しない
+puts mod.const_defined? :EVAL_CONST, false # falseと表示される
 # この問題では指定してない（デフォルト値true）ため探索を行い、定数をどちらも見つけることが出来ます。
 # 結果は次のとおりです。
 
-# EVAL_CONST is defined? true
-# EVAL_CONST is defined? true
+EVAL_CONST is defined? true
+EVAL_CONST is defined? true
 
 
 # 次のプログラムを実行するとどうなりますか
@@ -105,7 +105,7 @@ puts "HERE_DOC: CONST is defined? #{mod.const_defined?(:CONST_IN_HERE_DOC, false
 puts "HERE_DOC: CONST is defined? #{Object.const_defined?(:CONST_IN_HERE_DOC, false)}"
 
 # 出力結果
-# BLOCK: CONST is defined? false
-# BLOCK: CONST is defined? true
-# HERE_DOC: CONST is defined? true
-# HERE_DOC: CONST is defined? false
+BLOCK: CONST is defined? false
+BLOCK: CONST is defined? true
+HERE_DOC: CONST is defined? true
+HERE_DOC: CONST is defined? false
